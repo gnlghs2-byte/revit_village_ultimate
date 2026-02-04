@@ -1,0 +1,3489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏗️ Revit 빌리지 얼티밋 - BIM 메타버스</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #ffeaa7 0%, #fab1a0 100%);
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.15);
+            pointer-events: all;
+            min-width: 320px;
+            border: 3px solid rgba(255, 192, 203, 0.5);
+        }
+
+        #hud h2 {
+            color: #ff6b9d;
+            margin-bottom: 18px;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .character-selector {
+            display: flex;
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .character-btn {
+            padding: 14px 24px;
+            border: 3px solid #ffd93d;
+            border-radius: 15px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #fff 0%, #ffe6f0 100%);
+            transition: all 0.3s;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .character-btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.3);
+        }
+
+        .character-btn.active {
+            background: linear-gradient(135deg, #ff6b9d 0%, #ffa07a 100%);
+            color: white;
+            border-color: #ff6b9d;
+        }
+
+        .controls-info {
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe4e1 100%);
+            padding: 18px;
+            border-radius: 15px;
+            margin-top: 18px;
+            font-size: 15px;
+            line-height: 2;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .controls-info strong {
+            color: #ff6b9d;
+            font-size: 16px;
+        }
+
+        #toolbar {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 35px;
+            border-radius: 25px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.15);
+            pointer-events: all;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            border: 3px solid rgba(255, 192, 203, 0.5);
+        }
+
+        .tool-btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #ffd93d 0%, #ffbe76 100%);
+            color: #8b4513;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tool-btn:hover {
+            transform: scale(1.1) translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 190, 118, 0.4);
+        }
+
+        .tool-btn.active {
+            background: linear-gradient(135deg, #ff6b9d 0%, #ffa07a 100%);
+            color: white;
+        }
+
+        .block-palette {
+            display: flex;
+            gap: 12px;
+        }
+
+        .block-option {
+            width: 60px;
+            height: 60px;
+            border: 4px solid white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .block-option:hover {
+            transform: scale(1.15) translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .block-option.active {
+            border-color: #ff6b9d;
+            box-shadow: 0 0 20px rgba(255, 107, 157, 0.6);
+            transform: scale(1.2);
+        }
+
+        #minimap {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 240px;
+            height: 240px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.15);
+            pointer-events: all;
+            overflow: hidden;
+            border: 3px solid rgba(255, 192, 203, 0.5);
+        }
+
+        #minimap h3 {
+            text-align: center;
+            padding: 12px;
+            margin: 0;
+            background: linear-gradient(135deg, #ff6b9d 0%, #ffa07a 100%);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        #minimapCanvas {
+            display: block;
+            width: 100%;
+            height: calc(100% - 48px);
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-top: 8px solid #ff6b9d;
+            border-radius: 50%;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 30px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loading h1 {
+            font-size: 42px;
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        #loading p {
+            font-size: 22px;
+            color: white;
+            opacity: 0.9;
+        }
+
+        /* 3D 모델 패널 */
+        #modelPanel {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.15);
+            pointer-events: all;
+            min-width: 400px;
+            border: 3px solid rgba(255, 192, 203, 0.5);
+        }
+
+        #modelPanel h3 {
+            color: #ff6b9d;
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+
+        #modelPanel h4 {
+            color: #667eea;
+            margin: 15px 0 10px 0;
+            font-size: 16px;
+        }
+
+        #modelFileInput {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ffd93d;
+            border-radius: 10px;
+            cursor: pointer;
+            background: white;
+        }
+
+        #modelControls {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe4e1 100%);
+            border-radius: 15px;
+        }
+
+        #modelControls label {
+            display: block;
+            margin: 10px 0;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        #modelControls input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        #modelControls button {
+            margin: 10px 5px 0 0;
+        }
+
+        #modelList {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #modelList ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #modelList li {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #f0f0f0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #modelList button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #ff6b6b;
+            color: white;
+            font-size: 12px;
+        }
+
+        /* 🎯 TPS 슈팅 시스템 */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 200;
+            display: none; /* 전투 모드에서만 표시 */
+        }
+
+        #crosshair.active {
+            display: block;
+        }
+
+        /* 십자형 조준점 */
+        .crosshair-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 4px;
+            height: 4px;
+            background: #ff6b9d;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff6b9d, 0 0 20px #ff6b9d;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .crosshair-line {
+            position: absolute;
+            background: rgba(255, 107, 157, 0.8);
+            box-shadow: 0 0 5px rgba(255, 107, 157, 0.5);
+        }
+
+        .crosshair-line.top {
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 10px;
+        }
+
+        .crosshair-line.bottom {
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 10px;
+        }
+
+        .crosshair-line.left {
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 2px;
+        }
+
+        .crosshair-line.right {
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 2px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% { 
+                opacity: 0.7;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+
+        /* 전투 모드 표시 */
+        #combatMode {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 107, 157, 0.95);
+            padding: 15px 25px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 5px 20px rgba(255, 107, 157, 0.4);
+            display: none;
+            pointer-events: none;
+        }
+
+        #combatMode.active {
+            display: block;
+            animation: combatPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes combatPulse {
+            0%, 100% { box-shadow: 0 5px 20px rgba(255, 107, 157, 0.4); }
+            50% { box-shadow: 0 5px 30px rgba(255, 107, 157, 0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <h1>🏗️ Revit 빌리지 얼티밋</h1>
+        <p>BIM 메타버스를 준비하는 중...</p>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-overlay">
+        <div id="hud">
+            <h2>🏗️ Revit 빌리지</h2>
+            <div>
+                <strong>캐릭터 선택:</strong>
+                <div class="character-selector">
+                    <button class="character-btn active" data-char="ryan">🦁 라이언</button>
+                    <button class="character-btn" data-char="muzi">🐰 무지</button>
+                    <button class="character-btn" data-char="apeach">🍑 어피치</button>
+                </div>
+            </div>
+            <div class="controls-info">
+                <strong>⌨️ 조작법:</strong><br>
+                • <strong>W A S D</strong> - 캐릭터 이동<br>
+                • <strong>우클릭 드래그</strong> - 카메라 회전<br>
+                • <strong>스크롤</strong> - 줌 인/아웃<br>
+                • <strong>좌클릭</strong> - 블록 배치 / 🔫 발사<br>
+                • <strong>Space</strong> - 점프<br>
+                • <strong>Q</strong> - 전투 모드 전환
+            </div>
+        </div>
+
+        <div id="minimap">
+            <h3>🗺️ 마을 지도</h3>
+            <canvas id="minimapCanvas" width="234" height="192"></canvas>
+        </div>
+
+        <!-- 🎯 조준점 (Crosshair) -->
+        <div id="crosshair">
+            <div class="crosshair-center"></div>
+            <div class="crosshair-line top"></div>
+            <div class="crosshair-line bottom"></div>
+            <div class="crosshair-line left"></div>
+            <div class="crosshair-line right"></div>
+        </div>
+
+        <!-- 🔫 전투 모드 표시 -->
+        <div id="combatMode">🔫 전투 모드</div>
+
+        <div id="toolbar">
+            <button class="tool-btn active" id="buildMode">🔨 블록 모드</button>
+            <button class="tool-btn" id="removeMode">🗑️ 제거 모드</button>
+            <button class="tool-btn" id="combatModeBtn">🔫 전투 모드</button>
+            <button class="tool-btn" id="modelMode">🏠 3D 모델</button>
+            <div class="block-palette">
+                <div class="block-option active" data-block="grass" style="background: linear-gradient(135deg, #7ec850 0%, #6ba83c 100%);" title="잔디"></div>
+                <div class="block-option" data-block="wood" style="background: linear-gradient(135deg, #d2691e 0%, #8b4513 100%);" title="나무"></div>
+                <div class="block-option" data-block="stone" style="background: linear-gradient(135deg, #c0c0c0 0%, #909090 100%);" title="돌"></div>
+                <div class="block-option" data-block="brick" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);" title="벽돌"></div>
+            </div>
+        </div>
+
+        <!-- 3D 모델 임포트 패널 -->
+        <div id="modelPanel" style="display: none;">
+            <h3>🏗️ 3D 모델 가져오기</h3>
+            <p style="font-size: 14px; color: #666; margin: 10px 0;">Revit, 3ds Max, SketchUp, Rhino 파일</p>
+            <input type="file" id="modelFileInput" accept=".obj,.glb,.gltf" style="margin: 15px 0;">
+            <div id="modelControls" style="display: none;">
+                <h4>모델 조절:</h4>
+                <label>크기: <input type="range" id="modelScale" min="0.1" max="10" step="0.1" value="1"></label>
+                <label>회전: <input type="range" id="modelRotation" min="0" max="360" step="1" value="0"></label>
+                <button class="tool-btn" id="placeModel">배치하기</button>
+                <button class="tool-btn" id="cancelModel">취소</button>
+            </div>
+            <div id="modelList">
+                <h4>불러온 모델:</h4>
+                <ul id="loadedModels"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js ES Module 방식 (최신 로더 지원) -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    
+    <script type="module">
+        // ============================================
+        // 🏗️ Revit 빌리지 얼티밋 - BIM 메타버스
+        // ============================================
+        
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+        
+        class CozyVillageGame {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.player = null;
+                this.currentCharacter = 'ryan';
+                this.buildMode = true;
+                this.selectedBlock = 'grass';
+                
+                // ⌨️ WASD 키 상태 (KeyboardEvent.code 기반)
+                this.keyState = {
+                    KeyW: false,
+                    KeyA: false,
+                    KeyS: false,
+                    KeyD: false,
+                    Space: false
+                };
+                this.mouseDown = false;
+                this.mousePos = { x: 0, y: 0 };
+                
+                // 🎮 TPS 카메라 시스템
+                this.cameraOffset = new THREE.Vector3(0.5, 2, -3); // 숄더뷰 오프셋
+                this.cameraDistance = 5; // 캐릭터와의 거리
+                this.cameraAngle = { horizontal: 0, vertical: 0.3 }; // 수평/수직 각도
+                this.cameraTarget = new THREE.Vector3();
+                this.cameraLookAt = new THREE.Vector3();
+                
+                // 🏃 물리 기반 이동
+                this.velocity = new THREE.Vector3();
+                this.acceleration = 0.02; // 가속도
+                this.maxSpeed = 0.15; // 최대 속도
+                this.friction = 0.85; // 마찰력 (감속)
+                this.targetRotation = 0; // 목표 회전 각도
+                
+                // 점프 시스템
+                this.isGrounded = true;
+                this.jumpVelocity = 0;
+                this.gravity = 0.02;
+                this.jumpPower = 0.35;
+                
+                this.world = new Map();
+                this.gridSize = 1;
+                this.villageSize = 200;
+                this.buildings = [];
+                
+                // 🏗️ BIM 3D 모델 시스템
+                this.loadedModels = [];
+                this.currentModel = null;
+                this.modelPreview = null;
+                this.modelScale = 1;
+                this.modelRotation = 0;
+                this.modelHeight = 0;
+                this.gltfLoader = new GLTFLoader();
+                this.objLoader = new OBJLoader();
+                
+                // 애니메이션
+                this.time = 0;
+                this.playerBounce = 0;
+                
+                // 🔫 TPS 슈팅 시스템
+                this.combatMode = false; // 전투 모드 (false = 건축, true = 전투)
+                this.weapon = null; // 무기 오브젝트
+                this.bullets = []; // 발사된 총알 배열
+                this.bulletSpeed = 1.0; // 총알 속도 (빠르게!)
+                this.bulletLifetime = 2000; // 총알 생명 시간 (2초)
+                this.lastShotTime = 0; // 마지막 발사 시간
+                this.fireRate = 150; // 발사 간격 (ms)
+                
+                // 👾 몬스터(슬라임) 시스템
+                this.monsters = []; // 몬스터 배열
+                this.monsterCount = 8; // 슬라임 개수
+                
+                // 🔊 Web Audio API (효과음)
+                this.audioContext = null; // AudioContext (초기화 시 생성)
+                
+                this.init();
+            }
+
+            init() {
+                try {
+                    console.log('🎨 고품질 마을 초기화 중...');
+                    
+                    if (typeof THREE === 'undefined') {
+                        throw new Error('Three.js 라이브러리를 불러올 수 없습니다.');
+                    }
+                    
+                    this.setupScene();
+                    this.setupLights();
+                this.setupGround();
+                this.createPlayer();
+                this.createWeapon(); // 🔫 무기 생성
+                this.setupAudio(); // 🔊 오디오 시스템
+                this.spawnMonsters(); // 👾 슬라임 소환
+                this.setupControls();
+                this.setupModelLoaders();
+                this.animate();
+                    
+                    console.log('✅ 초기화 완료!');
+                    
+                    setTimeout(() => {
+                        document.getElementById('loading').style.display = 'none';
+                    }, 1500);
+                    
+                } catch (error) {
+                    console.error('❌ 오류:', error);
+                }
+            }
+
+            setupScene() {
+                this.scene = new THREE.Scene();
+                
+                // ✨ 파스텔톤 하늘색 배경
+                this.scene.background = new THREE.Color(0x87CEEB);
+                
+                // ✨ 부드러운 안개 효과 (원경 페이드)
+                this.scene.fog = new THREE.Fog(0xa8dadc, 80, 250);
+
+                this.camera = new THREE.PerspectiveCamera(
+                    65,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+
+                const canvas = document.getElementById('gameCanvas');
+                this.renderer = new THREE.WebGLRenderer({ 
+                    canvas: canvas, 
+                    antialias: true // 부드러운 엣지
+                });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                
+                // ✨ HIGH-FIDELITY 렌더러 설정
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 부드러운 그림자
+                this.renderer.outputColorSpace = THREE.SRGBColorSpace; // 선명한 색감
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.1;
+
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+
+            setupLights() {
+                // ✨ 1. HemisphereLight - 하늘과 땅의 반사광 (따뜻한 베이스)
+                const hemisphereLight = new THREE.HemisphereLight(
+                    0xffffbb, // 하늘 - 따뜻한 크림색
+                    0x7ec850, // 땅 - 부드러운 초록
+                    0.7
+                );
+                this.scene.add(hemisphereLight);
+
+                // ✨ 2. DirectionalLight - 태양광 (그림자 생성)
+                const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.3);
+                sunLight.position.set(80, 120, 60);
+                sunLight.castShadow = true;
+                
+                // 고해상도 그림자 설정
+                sunLight.shadow.mapSize.width = 2048;
+                sunLight.shadow.mapSize.height = 2048;
+                sunLight.shadow.camera.left = -120;
+                sunLight.shadow.camera.right = 120;
+                sunLight.shadow.camera.top = 120;
+                sunLight.shadow.camera.bottom = -120;
+                sunLight.shadow.camera.near = 0.5;
+                sunLight.shadow.camera.far = 500;
+                sunLight.shadow.bias = -0.0001;
+                sunLight.shadow.normalBias = 0.02;
+                
+                this.scene.add(sunLight);
+
+                // ✨ 3. 부드러운 주변광
+                const ambientLight = new THREE.AmbientLight(0xffeedd, 0.4);
+                this.scene.add(ambientLight);
+                
+                // ✨ 4. 중앙 채우기 조명 (포근함 강화)
+                const fillLight = new THREE.PointLight(0xffd9b3, 0.3, 50);
+                fillLight.position.set(0, 20, 0);
+                this.scene.add(fillLight);
+            }
+
+            setupGround() {
+                console.log('🏗️ 아늑한 마을 생성 중...');
+                
+                // 바닥
+                this.createCozyTerrain();
+                
+                // 중앙 광장
+                this.createCozyPlaza();
+                
+                // 길
+                this.createPaths();
+                
+                // 건물들
+                this.createCozyBuildings();
+                
+                // 자연 환경
+                this.createCozyNature();
+                
+                // 장식들
+                this.createDecorations();
+                
+                console.log('✅ 마을 생성 완료!');
+            }
+
+            createCozyTerrain() {
+                // 🌿 잔디 느낌의 텍스처 바닥 (격자 패턴)
+                const groundSize = this.villageSize;
+                const tileSize = 10;
+                
+                for (let x = -groundSize/2; x < groundSize/2; x += tileSize) {
+                    for (let z = -groundSize/2; z < groundSize/2; z += tileSize) {
+                        const distFromCenter = Math.sqrt(x*x + z*z);
+                        
+                        // 채도 높은 잔디 색상
+                        let color;
+                        if (distFromCenter < 45) {
+                            color = 0xf5deb3; // 중앙 광장 - 밝은 모래색
+                        } else if (distFromCenter < 90) {
+                            color = 0x8fbc8f; // 잔디
+                        } else {
+                            color = 0x6b8e23; // 짙은 숲
+                        }
+                        
+                        // ✨ MeshStandardMaterial 사용 (빛 반응)
+                        const tile = new THREE.Mesh(
+                            new THREE.BoxGeometry(tileSize, 0.3, tileSize),
+                            new THREE.MeshStandardMaterial({ 
+                                color: color,
+                                roughness: 0.9,
+                                metalness: 0.1
+                            })
+                        );
+                        tile.position.set(x + tileSize/2, -0.15, z + tileSize/2);
+                        tile.receiveShadow = true;
+                        this.scene.add(tile);
+                    }
+                }
+                
+                // 은은한 그리드 헬퍼
+                const grid = new THREE.GridHelper(groundSize, 50, 0x999999, 0xdddddd);
+                grid.position.y = 0.02;
+                grid.material.opacity = 0.2;
+                grid.material.transparent = true;
+                this.scene.add(grid);
+            }
+
+            createCozyPlaza() {
+                // 화려한 분수대
+                const fountain = new THREE.Group();
+                
+                const base = new THREE.Mesh(
+                    new THREE.CylinderGeometry(6, 7, 1.5, 20),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xffe4e1,
+                        roughness: 0.4,
+                        metalness: 0.3
+                    })
+                );
+                base.position.y = 0.75;
+                base.castShadow = true;
+                base.receiveShadow = true;
+                fountain.add(base);
+                
+                // 물
+                const water = new THREE.Mesh(
+                    new THREE.CylinderGeometry(5.5, 5.5, 0.8, 20),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x4fc3f7,
+                        roughness: 0.1,
+                        metalness: 0.8,
+                        transparent: true,
+                        opacity: 0.7,
+                        emissive: 0x2196f3,
+                        emissiveIntensity: 0.3
+                    })
+                );
+                water.position.y = 1.7;
+                fountain.add(water);
+                
+                // 중앙 기둥 (둥근 느낌)
+                const pillar = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.5, 0.6, 4, 16),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xffd700,
+                        roughness: 0.3,
+                        metalness: 0.7
+                    })
+                );
+                pillar.position.y = 3.5;
+                pillar.castShadow = true;
+                fountain.add(pillar);
+                
+                // 상단 구체 (반짝이는)
+                const top = new THREE.Mesh(
+                    new THREE.SphereGeometry(1, 20, 20),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x4fc3f7,
+                        roughness: 0.2,
+                        metalness: 0.8,
+                        emissive: 0x2196f3,
+                        emissiveIntensity: 0.5
+                    })
+                );
+                top.position.y = 6;
+                top.castShadow = true;
+                fountain.add(top);
+                
+                this.scene.add(fountain);
+                
+                // 가로등 (포근한 조명)
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const x = Math.cos(angle) * 28;
+                    const z = Math.sin(angle) * 28;
+                    this.createWarmLamp(x, 0, z);
+                }
+            }
+
+            createWarmLamp(x, y, z) {
+                const lamp = new THREE.Group();
+                
+                // 기둥 (둥근 느낌)
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.25, 0.3, 7, 12),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xff9a76,
+                        roughness: 0.5,
+                        metalness: 0.4
+                    })
+                );
+                pole.position.y = 3.5;
+                pole.castShadow = true;
+                lamp.add(pole);
+                
+                // 전구 (따뜻한 빛)
+                const bulb = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.9, 16, 16),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xffd700,
+                        roughness: 0.2,
+                        metalness: 0.8,
+                        emissive: 0xffa500,
+                        emissiveIntensity: 1.2
+                    })
+                );
+                bulb.position.y = 7.5;
+                lamp.add(bulb);
+                
+                // 실제 포인트 라이트
+                const pointLight = new THREE.PointLight(0xffd700, 0.8, 25);
+                pointLight.position.y = 7.5;
+                pointLight.castShadow = true;
+                pointLight.shadow.mapSize.width = 512;
+                pointLight.shadow.mapSize.height = 512;
+                lamp.add(pointLight);
+                
+                lamp.position.set(x, y, z);
+                this.scene.add(lamp);
+            }
+
+            createPaths() {
+                // 포근한 돌길
+                const pathMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0xd2b48c,
+                    roughness: 0.8,
+                    metalness: 0.1
+                });
+                
+                // 가로 길
+                const pathH = new THREE.Mesh(
+                    new THREE.BoxGeometry(this.villageSize, 0.2, 5),
+                    pathMaterial
+                );
+                pathH.position.y = 0.1;
+                pathH.receiveShadow = true;
+                this.scene.add(pathH);
+                
+                // 세로 길
+                const pathV = new THREE.Mesh(
+                    new THREE.BoxGeometry(5, 0.2, this.villageSize),
+                    pathMaterial
+                );
+                pathV.position.y = 0.1;
+                pathV.receiveShadow = true;
+                this.scene.add(pathV);
+            }
+
+            createCozyBuildings() {
+                const positions = [
+                    { x: -50, z: -70, type: 'round', color: 0xff9aa2 },
+                    { x: 0, z: -70, type: 'shop', color: 0xffdac1 },
+                    { x: 50, z: -70, type: 'round', color: 0xffee93 },
+                    { x: 70, z: -40, type: 'tower', color: 0xb5ead7 },
+                    { x: 70, z: 40, type: 'round', color: 0xc7ceea },
+                    { x: -50, z: 70, type: 'shop', color: 0xffc8dd },
+                    { x: 0, z: 70, type: 'round', color: 0xbde0fe },
+                    { x: 50, z: 70, type: 'shop', color: 0xf1c0e8 },
+                    { x: -70, z: -40, type: 'tower', color: 0xffc6ff },
+                    { x: -70, z: 40, type: 'round', color: 0xffffd2 }
+                ];
+                
+                positions.forEach(pos => {
+                    if (pos.type === 'round') {
+                        this.createRoundHouse(pos.x, 0, pos.z, pos.color);
+                    } else if (pos.type === 'shop') {
+                        this.createCozyShop(pos.x, 0, pos.z, pos.color);
+                    } else if (pos.type === 'tower') {
+                        this.createCozyTower(pos.x, 0, pos.z, pos.color);
+                    }
+                });
+            }
+
+            createRoundHouse(x, y, z, color) {
+                const house = new THREE.Group();
+                
+                // ✨ 둥근 벽 (몽글몽글)
+                const wall = new THREE.Mesh(
+                    new THREE.CylinderGeometry(5.5, 5.5, 7, 20),
+                    new THREE.MeshStandardMaterial({ 
+                        color: color,
+                        roughness: 0.7,
+                        metalness: 0.2
+                    })
+                );
+                wall.position.y = 3.5;
+                wall.castShadow = true;
+                wall.receiveShadow = true;
+                house.add(wall);
+                
+                // ✨ 귀여운 지붕 (부드러운 원뿔)
+                const roof = new THREE.Mesh(
+                    new THREE.ConeGeometry(7.5, 5, 20),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xff6b6b,
+                        roughness: 0.6,
+                        metalness: 0.3
+                    })
+                );
+                roof.position.y = 9.5;
+                roof.castShadow = true;
+                house.add(roof);
+                
+                // 창문들 (반짝이는)
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
+                    const window = new THREE.Mesh(
+                        new THREE.BoxGeometry(2, 2, 0.3),
+                        new THREE.MeshStandardMaterial({ 
+                            color: 0x87ceeb,
+                            roughness: 0.1,
+                            metalness: 0.9,
+                            emissive: 0x4fc3f7,
+                            emissiveIntensity: 0.4
+                        })
+                    );
+                    window.position.set(
+                        Math.cos(angle) * 5.6,
+                        5,
+                        Math.sin(angle) * 5.6
+                    );
+                    window.rotation.y = -angle;
+                    house.add(window);
+                }
+                
+                // 문 (둥근 느낌)
+                const door = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.5, 4, 0.4),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x8b4513,
+                        roughness: 0.8,
+                        metalness: 0.1
+                    })
+                );
+                door.position.set(0, 2, 5.6);
+                house.add(door);
+                
+                house.position.set(x, y, z);
+                this.scene.add(house);
+                this.buildings.push(house);
+            }
+
+            createCozyShop(x, y, z, color) {
+                const shop = new THREE.Group();
+                
+                // ✨ 본체 (둥근 모서리 느낌)
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(13, 8, 11),
+                    new THREE.MeshStandardMaterial({ 
+                        color: color,
+                        roughness: 0.6,
+                        metalness: 0.2
+                    })
+                );
+                body.position.y = 4;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                shop.add(body);
+                
+                // 지붕
+                const roof = new THREE.Mesh(
+                    new THREE.BoxGeometry(14, 1.5, 12),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x8b4513,
+                        roughness: 0.7,
+                        metalness: 0.2
+                    })
+                );
+                roof.position.y = 8.75;
+                roof.castShadow = true;
+                shop.add(roof);
+                
+                // ✨ 화려한 간판 (발광)
+                const sign = new THREE.Mesh(
+                    new THREE.BoxGeometry(9, 2.5, 0.6),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xff1493,
+                        roughness: 0.3,
+                        metalness: 0.7,
+                        emissive: 0xff1493,
+                        emissiveIntensity: 0.8
+                    })
+                );
+                sign.position.set(0, 10, 0);
+                shop.add(sign);
+                
+                // 큰 유리창 (반짝이는)
+                const window = new THREE.Mesh(
+                    new THREE.BoxGeometry(10, 5.5, 0.4),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x87ceeb,
+                        roughness: 0.1,
+                        metalness: 0.9,
+                        transparent: true,
+                        opacity: 0.6,
+                        emissive: 0x4fc3f7,
+                        emissiveIntensity: 0.3
+                    })
+                );
+                window.position.set(0, 4, 5.6);
+                shop.add(window);
+                
+                shop.position.set(x, y, z);
+                this.scene.add(shop);
+                this.buildings.push(shop);
+            }
+
+            createCozyTower(x, y, z, color) {
+                const tower = new THREE.Group();
+                
+                // 3단 타워 (둥근 느낌)
+                for (let i = 0; i < 3; i++) {
+                    const segment = new THREE.Mesh(
+                        new THREE.CylinderGeometry(4.5 - i * 0.6, 5 - i * 0.6, 6, 16),
+                        new THREE.MeshStandardMaterial({ 
+                            color: i % 2 === 0 ? color : 0xffffff,
+                            roughness: 0.6,
+                            metalness: 0.3
+                        })
+                    );
+                    segment.position.y = 3 + i * 6;
+                    segment.castShadow = true;
+                    segment.receiveShadow = true;
+                    tower.add(segment);
+                }
+                
+                // 지붕 (반짝이는)
+                const top = new THREE.Mesh(
+                    new THREE.ConeGeometry(5, 6, 16),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xffd700,
+                        roughness: 0.3,
+                        metalness: 0.8,
+                        emissive: 0xff8c00,
+                        emissiveIntensity: 0.4
+                    })
+                );
+                top.position.y = 24;
+                top.castShadow = true;
+                tower.add(top);
+                
+                // 깃발
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.15, 4, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+                );
+                pole.position.y = 29;
+                tower.add(pole);
+                
+                const flag = new THREE.Mesh(
+                    new THREE.PlaneGeometry(2.5, 1.8),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xff6b9d,
+                        side: THREE.DoubleSide,
+                        emissive: 0xff1493,
+                        emissiveIntensity: 0.3
+                    })
+                );
+                flag.position.set(1.2, 29, 0);
+                tower.add(flag);
+                
+                tower.position.set(x, y, z);
+                this.scene.add(tower);
+                this.buildings.push(tower);
+            }
+
+            createCozyNature() {
+                const excludeRadius = 50;
+                
+                // 화려한 나무들
+                for (let i = 0; i < 80; i++) {
+                    const x = (Math.random() - 0.5) * 180;
+                    const z = (Math.random() - 0.5) * 180;
+                    
+                    if (Math.abs(x) > excludeRadius || Math.abs(z) > excludeRadius) {
+                        const treeType = Math.floor(Math.random() * 2);
+                        if (treeType === 0) {
+                            this.createSoftTree(x, 0, z, 0xff9aa2);
+                        } else {
+                            this.createSoftTree(x, 0, z, 0xb5ead7);
+                        }
+                    }
+                }
+                
+                // 반짝이는 꽃들
+                for (let i = 0; i < 60; i++) {
+                    const x = (Math.random() - 0.5) * 70;
+                    const z = (Math.random() - 0.5) * 70;
+                    if (Math.abs(x) < 45 && Math.abs(z) < 45) {
+                        this.createSparkleFlower(x, 0, z);
+                    }
+                }
+            }
+
+            createSoftTree(x, y, z, leafColor) {
+                const tree = new THREE.Group();
+                
+                // 줄기
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.4, 0.5, 4, 12),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x8b4513,
+                        roughness: 0.9,
+                        metalness: 0.1
+                    })
+                );
+                trunk.position.y = 2;
+                trunk.castShadow = true;
+                tree.add(trunk);
+                
+                // ✨ 몽글몽글한 잎
+                const leaves = new THREE.Mesh(
+                    new THREE.SphereGeometry(2.5, 12, 12),
+                    new THREE.MeshStandardMaterial({ 
+                        color: leafColor,
+                        roughness: 0.7,
+                        metalness: 0.2,
+                        emissive: leafColor,
+                        emissiveIntensity: 0.2
+                    })
+                );
+                leaves.position.y = 5.5;
+                leaves.castShadow = true;
+                tree.add(leaves);
+                
+                tree.position.set(x, y, z);
+                this.scene.add(tree);
+            }
+
+            createSparkleFlower(x, y, z) {
+                const colors = [
+                    0xff9aa2, 0xffdac1, 0xffee93, 
+                    0xb5ead7, 0xc7ceea, 0xffc8dd
+                ];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                // 줄기
+                const stem = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.08, 0.08, 1.2, 8),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x4a7c59,
+                        roughness: 0.8
+                    })
+                );
+                stem.position.set(x, 0.6, z);
+                stem.castShadow = true;
+                this.scene.add(stem);
+                
+                // ✨ 반짝이는 꽃잎
+                const petal = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.35, 12, 12),
+                    new THREE.MeshStandardMaterial({ 
+                        color: color,
+                        roughness: 0.4,
+                        metalness: 0.6,
+                        emissive: color,
+                        emissiveIntensity: 0.4
+                    })
+                );
+                petal.position.set(x, 1.3, z);
+                petal.castShadow = true;
+                this.scene.add(petal);
+            }
+
+            createDecorations() {
+                // 벤치들 (귀여운 색상)
+                const benchPos = [
+                    {x: -18, z: -18}, {x: 18, z: -18},
+                    {x: -18, z: 18}, {x: 18, z: 18}
+                ];
+                benchPos.forEach(p => this.createCuteBench(p.x, 0, p.z));
+                
+                // 표지판들
+                this.createCuteSign(-35, 0, 0);
+                this.createCuteSign(35, 0, 0);
+                this.createCuteSign(0, 0, -35);
+                this.createCuteSign(0, 0, 35);
+            }
+
+            createCuteBench(x, y, z) {
+                const bench = new THREE.Group();
+                
+                // ✨ 둥근 벤치
+                const seat = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.5, 0.5, 1.2),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xff9aa2,
+                        roughness: 0.6,
+                        metalness: 0.3
+                    })
+                );
+                seat.position.y = 1.2;
+                seat.castShadow = true;
+                bench.add(seat);
+                
+                const back = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.5, 1.5, 0.4),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xffb3ba,
+                        roughness: 0.6,
+                        metalness: 0.3
+                    })
+                );
+                back.position.set(0, 2, -0.4);
+                back.castShadow = true;
+                bench.add(back);
+                
+                bench.position.set(x, y, z);
+                this.scene.add(bench);
+            }
+
+            createCuteSign(x, y, z) {
+                const sign = new THREE.Group();
+                
+                const pole = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.2, 4, 12),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x8b4513,
+                        roughness: 0.8
+                    })
+                );
+                pole.position.y = 2;
+                pole.castShadow = true;
+                sign.add(pole);
+                
+                // ✨ 반짝이는 표지판
+                const board = new THREE.Mesh(
+                    new THREE.BoxGeometry(5, 2, 0.4),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xffd700,
+                        roughness: 0.3,
+                        metalness: 0.7,
+                        emissive: 0xff8c00,
+                        emissiveIntensity: 0.3
+                    })
+                );
+                board.position.y = 4.5;
+                board.castShadow = true;
+                sign.add(board);
+                
+                sign.position.set(x, y, z);
+                this.scene.add(sign);
+            }
+
+            createPlayer() {
+                this.player = new THREE.Group();
+                this.player.userData.animationPhase = 0; // 애니메이션용
+                this.createCharacter(this.currentCharacter);
+                this.player.position.set(0, 1, 0);
+                this.scene.add(this.player);
+            }
+
+            // 🔫 거대한 장난감 총 생성 (로컬 좌표계 정렬!)
+            createWeapon() {
+                this.weapon = new THREE.Group();
+                
+                // 🔴 총신 (Barrel) - Z축 정면 방향으로!
+                const barrel = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.15, 1.2, 16),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0xFF0000, // 진한 빨간색
+                        wireframe: false
+                    })
+                );
+                // CylinderGeometry는 Y축을 향하므로, X축 기준 90도 회전하여 Z축(정면)을 향하게!
+                barrel.rotation.x = Math.PI / 2;
+                barrel.position.z = 0.6; // Z축 앞쪽 (정면)
+                barrel.castShadow = true;
+                this.weapon.add(barrel);
+                
+                // 🔵 손잡이 (Grip) - 뒤쪽 아래
+                const grip = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.5, 0.25),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0x0000FF, // 진한 파란색
+                        wireframe: false
+                    })
+                );
+                grip.position.set(0, -0.3, -0.1); // 뒤쪽 아래
+                grip.castShadow = true;
+                this.weapon.add(grip);
+                
+                // 🟡 방아쇠 (Trigger) - 손잡이 앞
+                const trigger = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.08, 0.15, 0.1),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0xFFFF00, // 노란색
+                        wireframe: false
+                    })
+                );
+                trigger.position.set(0, -0.1, 0); // 중앙
+                trigger.castShadow = true;
+                this.weapon.add(trigger);
+                
+                // 🟠 총구 장식 (Muzzle) - 앞쪽 끝
+                const muzzle = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.15, 0.2, 16),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0xFF8800, // 오렌지색
+                        wireframe: false
+                    })
+                );
+                muzzle.rotation.x = Math.PI / 2; // Z축 정면 방향
+                muzzle.position.z = 1.2; // 총구 위치 (앞쪽)
+                muzzle.castShadow = true;
+                this.weapon.add(muzzle);
+                
+                // 🟣 조준경 (Sight) - 중앙 위
+                const sight = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.3, 0.15),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0xFF00FF, // 보라색
+                        wireframe: false
+                    })
+                );
+                sight.position.set(0, 0.3, 0.3); // 중앙 위
+                sight.castShadow = true;
+                this.weapon.add(sight);
+                
+                // ⭐ 총구 방향 마커 (초록색 - 총구가 어디를 향하는지 확인!)
+                this.muzzleFlash = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 16, 16),
+                    new THREE.MeshBasicMaterial({ 
+                        color: 0x00FF00, // 초록색
+                        wireframe: false
+                    })
+                );
+                this.muzzleFlash.position.z = 1.4; // 총구 앞쪽 (Z축 = 정면)
+                this.weapon.add(this.muzzleFlash);
+                
+                // 🎯 무기를 캐릭터 오른쪽 어깨 앞에 부착 (로컬 좌표계)
+                // X = 오른쪽, Y = 위, Z = 앞
+                this.weapon.position.set(0.6, 0.8, 0.5); // 오른쪽 어깨 앞
+                this.weapon.rotation.set(0, 0, 0); // 회전 없음 (캐릭터와 같은 방향)
+                this.weapon.scale.set(1.5, 1.5, 1.5); // 1.5배 확대
+                this.weapon.visible = false; // 기본적으로 숨김
+                
+                // ✅ 캐릭터 그룹에 부착 (중요!)
+                this.player.add(this.weapon);
+                
+                // 🐞 디버깅 로그
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('🔫 총 생성 완료! (로컬 좌표계 정렬)');
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('✅ 총 위치 (로컬):', this.weapon.position);
+                console.log('✅ 총 회전 (로컬):', this.weapon.rotation);
+                console.log('✅ 총구 방향: Z축 정면 (캐릭터 정면과 일치)');
+                console.log('✅ 초록색 마커: 총구 끝 (Z = +1.4)');
+                console.log('✅ 부모: player (캐릭터 그룹)');
+                console.log('💡 캐릭터가 회전하면 총도 같이 회전합니다!');
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            }
+
+            // 🔊 Web Audio API 초기화 (효과음)
+            setupAudio() {
+                try {
+                    // AudioContext 생성 (사용자 제스처 후 활성화)
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('🔊 오디오 시스템 초기화 완료!');
+                } catch (error) {
+                    console.warn('⚠️ 오디오 시스템 초기화 실패:', error);
+                }
+            }
+
+            // 🔊 발사 효과음 (8비트 레트로 스타일!)
+            playShootSound() {
+                if (!this.audioContext) return;
+                
+                try {
+                    // Resume AudioContext (브라우저 정책)
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume();
+                    }
+                    
+                    // Oscillator 생성 (사인파)
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    // 8비트 레트로 "피슝~" 사운드
+                    oscillator.type = 'square'; // 사각파 (8비트 느낌)
+                    oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime); // 높은 음
+                    oscillator.frequency.exponentialRampToValueAtTime(200, this.audioContext.currentTime + 0.1); // 낮아짐
+                    
+                    // 볼륨 엔벨로프 (빠르게 줄어듦)
+                    gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+                    
+                    // 재생
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + 0.1);
+                    
+                } catch (error) {
+                    console.warn('⚠️ 사운드 재생 실패:', error);
+                }
+            }
+
+            // 👾 슬라임 몬스터 소환
+            spawnMonsters() {
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('👾 슬라임 몬스터 소환 중...');
+                
+                const spawnRadius = this.villageSize / 2 - 10; // 마을 가장자리
+                
+                for (let i = 0; i < this.monsterCount; i++) {
+                    // 랜덤 위치
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * spawnRadius;
+                    const x = Math.cos(angle) * distance;
+                    const z = Math.sin(angle) * distance;
+                    
+                    const slime = this.createSlime(x, z);
+                    this.monsters.push(slime);
+                    this.scene.add(slime);
+                }
+                
+                console.log(`✅ 슬라임 ${this.monsterCount}마리 소환 완료!`);
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            }
+
+            // 👾 작고 귀여운 몬스터 생성 (메이플 스타일!)
+            createSlime(x, z) {
+                // 랜덤으로 슬라임 또는 버섯 생성
+                const type = Math.random() > 0.5 ? 'slime' : 'mushroom';
+                
+                if (type === 'slime') {
+                    return this.createTinySlime(x, z);
+                } else {
+                    return this.createTinyMushroom(x, z);
+                }
+            }
+
+            // 🟢 작은 슬라임 (메이플스토리 스타일)
+            createTinySlime(x, z) {
+                const slime = new THREE.Group();
+                
+                const radius = 0.35; // 작은 크기!
+                
+                // 몸통 (작고 반투명한 라임색)
+                const body = new THREE.Mesh(
+                    new THREE.SphereGeometry(radius, 16, 16),
+                    new THREE.MeshBasicMaterial({
+                        color: 0x32CD32, // 라임색
+                        transparent: true,
+                        opacity: 0.8,
+                        wireframe: false
+                    })
+                );
+                body.scale.set(1, 0.7, 1); // Y축 약간 납작 (슬라임 느낌)
+                body.position.y = radius * 0.7; // 바닥에서 중심까지
+                body.castShadow = true;
+                slime.add(body);
+                
+                // 왼쪽 눈 (작은 검은 점)
+                const leftEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.05, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0x000000 })
+                );
+                leftEye.position.set(-0.12, radius * 0.8, radius * 0.9);
+                slime.add(leftEye);
+                
+                // 오른쪽 눈
+                const rightEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.05, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0x000000 })
+                );
+                rightEye.position.set(0.12, radius * 0.8, radius * 0.9);
+                slime.add(rightEye);
+                
+                // 입 (작은 미소)
+                const mouth = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.03, 6, 6),
+                    new THREE.MeshBasicMaterial({ color: 0x000000 })
+                );
+                mouth.position.set(0, radius * 0.6, radius * 0.95);
+                slime.add(mouth);
+                
+                // 📍 위치 설정 (바닥에 정확히 붙이기)
+                slime.position.set(x, 0, z);
+                
+                // 슬라임 데이터
+                slime.userData = {
+                    type: 'slime',
+                    health: 1,
+                    radius: radius, // 충돌 판정 반경 (작아짐!)
+                    speed: 0.02 // 느린 속도
+                };
+                
+                return slime;
+            }
+
+            // 🍄 작은 주황버섯 (메이플스토리 스타일)
+            createTinyMushroom(x, z) {
+                const mushroom = new THREE.Group();
+                
+                // 갓 (주황색 반구)
+                const capRadius = 0.4;
+                const cap = new THREE.Mesh(
+                    new THREE.SphereGeometry(capRadius, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xFFA500, // 주황색
+                        wireframe: false
+                    })
+                );
+                cap.position.y = 0.4; // 갓 높이
+                cap.castShadow = true;
+                mushroom.add(cap);
+                
+                // 갓 무늬 (흰색 점)
+                const spot1 = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.08, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+                );
+                spot1.position.set(0.15, 0.5, 0.15);
+                mushroom.add(spot1);
+                
+                const spot2 = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.06, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+                );
+                spot2.position.set(-0.12, 0.48, 0.12);
+                mushroom.add(spot2);
+                
+                // 줄기 (크림색 원기둥)
+                const stem = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.15, 0.4, 12),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xFFFACD, // 크림색
+                        wireframe: false
+                    })
+                );
+                stem.position.y = 0.2; // 줄기 중심
+                stem.castShadow = true;
+                mushroom.add(stem);
+                
+                // 왼쪽 눈
+                const leftEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.05, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0x000000 })
+                );
+                leftEye.position.set(-0.08, 0.25, 0.14);
+                mushroom.add(leftEye);
+                
+                // 오른쪽 눈
+                const rightEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.05, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: 0x000000 })
+                );
+                rightEye.position.set(0.08, 0.25, 0.14);
+                mushroom.add(rightEye);
+                
+                // 입 (작은 미소)
+                const mouth = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.03, 6, 6),
+                    new THREE.MeshBasicMaterial({ color: 0x000000 })
+                );
+                mouth.position.set(0, 0.15, 0.16);
+                mushroom.add(mouth);
+                
+                // 📍 위치 설정 (바닥에 정확히 붙이기)
+                mushroom.position.set(x, 0, z);
+                
+                // 버섯 데이터
+                mushroom.userData = {
+                    type: 'mushroom',
+                    health: 1,
+                    radius: 0.4, // 충돌 판정 반경
+                    speed: 0.02 // 느린 속도
+                };
+                
+                return mushroom;
+            }
+
+            createCharacter(type) {
+                // 무기를 제외한 캐릭터만 제거
+                const childrenToRemove = [];
+                for (let i = 0; i < this.player.children.length; i++) {
+                    if (this.player.children[i] !== this.weapon) {
+                        childrenToRemove.push(this.player.children[i]);
+                    }
+                }
+                childrenToRemove.forEach(child => this.player.remove(child));
+
+                if (type === 'ryan') {
+                    this.createRyan();
+                } else if (type === 'muzi') {
+                    this.createMuzi();
+                } else if (type === 'apeach') {
+                    this.createApeach();
+                }
+            }
+
+            // 🦁 라이언 - 갈기 없는 수사자
+            createRyan() {
+                const ryan = new THREE.Group();
+                ryan.name = 'ryan';
+                
+                // === HEAD ===
+                const head = new THREE.Group();
+                head.name = 'head';
+                
+                // 얼굴 (큰 구체)
+                const face = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.8, 32, 32),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xDAA520, // 황금색
+                        roughness: 0.7,
+                        metalness: 0.0
+                    })
+                );
+                face.castShadow = true;
+                face.receiveShadow = true;
+                head.add(face);
+                
+                // 주둥이 (살구색)
+                const muzzle = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.45, 24, 24),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFE4B5,
+                        roughness: 0.7,
+                        metalness: 0.0
+                    })
+                );
+                muzzle.scale.set(0.9, 0.7, 1);
+                muzzle.position.set(0, -0.1, 0.6);
+                muzzle.castShadow = true;
+                muzzle.receiveShadow = true;
+                head.add(muzzle);
+                
+                // 귀 (둥근 작은 반구)
+                const earGeometry = new THREE.SphereGeometry(0.25, 20, 20, 0, Math.PI * 2, 0, Math.PI / 2);
+                const earMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xDAA520,
+                    roughness: 0.7,
+                    metalness: 0.0
+                });
+                
+                const leftEar = new THREE.Mesh(earGeometry, earMaterial);
+                leftEar.position.set(-0.5, 0.6, 0.2);
+                leftEar.rotation.z = -0.3;
+                leftEar.castShadow = true;
+                head.add(leftEar);
+                
+                const rightEar = new THREE.Mesh(earGeometry, earMaterial);
+                rightEar.position.set(0.5, 0.6, 0.2);
+                rightEar.rotation.z = 0.3;
+                rightEar.castShadow = true;
+                head.add(rightEar);
+                
+                // 귀 안쪽 (분홍색)
+                const innerEarMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xffb6c1,
+                    roughness: 0.6
+                });
+                
+                const leftInnerEar = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 16, 16),
+                    innerEarMaterial
+                );
+                leftInnerEar.position.set(-0.5, 0.55, 0.3);
+                leftInnerEar.scale.set(0.8, 0.6, 0.5);
+                head.add(leftInnerEar);
+                
+                const rightInnerEar = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 16, 16),
+                    innerEarMaterial
+                );
+                rightInnerEar.position.set(0.5, 0.55, 0.3);
+                rightInnerEar.scale.set(0.8, 0.6, 0.5);
+                head.add(rightInnerEar);
+                
+                // 눈 (작고 무표정)
+                const eyeMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0x000000,
+                    roughness: 0.3,
+                    metalness: 0.8
+                });
+                
+                const leftEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.08, 16, 16),
+                    eyeMaterial
+                );
+                leftEye.position.set(-0.25, 0.15, 0.7);
+                head.add(leftEye);
+                
+                const rightEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.08, 16, 16),
+                    eyeMaterial
+                );
+                rightEye.position.set(0.25, 0.15, 0.7);
+                head.add(rightEye);
+                
+                // 코 (검은 실린더)
+                const nose = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.12, 0.12, 0.15, 16),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x000000,
+                        roughness: 0.5
+                    })
+                );
+                nose.rotation.x = Math.PI / 2;
+                nose.position.set(0, 0, 0.9);
+                nose.castShadow = true;
+                head.add(nose);
+                
+                // 입 (간단한 선)
+                const mouthShape = new THREE.Shape();
+                mouthShape.moveTo(-0.15, 0);
+                mouthShape.quadraticCurveTo(0, -0.1, 0.15, 0);
+                
+                const mouthGeometry = new THREE.ShapeGeometry(mouthShape);
+                const mouth = new THREE.Mesh(
+                    mouthGeometry,
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x000000,
+                        side: THREE.DoubleSide
+                    })
+                );
+                mouth.position.set(0, -0.25, 0.85);
+                head.add(mouth);
+                
+                head.position.y = 1;
+                ryan.add(head);
+                
+                // === BODY ===
+                const body = new THREE.Group();
+                body.name = 'body';
+                
+                const bodyMesh = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.5, 0.8, 20, 32),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xDAA520,
+                        roughness: 0.7,
+                        metalness: 0.0
+                    })
+                );
+                bodyMesh.castShadow = true;
+                bodyMesh.receiveShadow = true;
+                body.add(bodyMesh);
+                
+                // 배 (살구색)
+                const belly = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.4, 24, 24),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFE4B5,
+                        roughness: 0.7
+                    })
+                );
+                belly.scale.set(0.9, 1, 0.7);
+                belly.position.set(0, 0, 0.35);
+                belly.castShadow = true;
+                body.add(belly);
+                
+                body.position.y = 0;
+                ryan.add(body);
+                
+                // === ARMS ===
+                const arms = new THREE.Group();
+                arms.name = 'arms';
+                
+                const armMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xDAA520,
+                    roughness: 0.7
+                });
+                
+                const leftArm = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.15, 0.6, 12, 16),
+                    armMaterial
+                );
+                leftArm.position.set(-0.55, 0.2, 0);
+                leftArm.rotation.z = 0.3;
+                leftArm.castShadow = true;
+                leftArm.name = 'leftArm';
+                arms.add(leftArm);
+                
+                const rightArm = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.15, 0.6, 12, 16),
+                    armMaterial
+                );
+                rightArm.position.set(0.55, 0.2, 0);
+                rightArm.rotation.z = -0.3;
+                rightArm.castShadow = true;
+                rightArm.name = 'rightArm';
+                arms.add(rightArm);
+                
+                ryan.add(arms);
+                
+                // === LEGS ===
+                const legs = new THREE.Group();
+                legs.name = 'legs';
+                
+                const legMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xDAA520,
+                    roughness: 0.7
+                });
+                
+                const leftLeg = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.18, 0.5, 12, 16),
+                    legMaterial
+                );
+                leftLeg.position.set(-0.25, -0.7, 0);
+                leftLeg.castShadow = true;
+                leftLeg.name = 'leftLeg';
+                legs.add(leftLeg);
+                
+                const rightLeg = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.18, 0.5, 12, 16),
+                    legMaterial
+                );
+                rightLeg.position.set(0.25, -0.7, 0);
+                rightLeg.castShadow = true;
+                rightLeg.name = 'rightLeg';
+                legs.add(rightLeg);
+                
+                ryan.add(legs);
+                
+                // === TAIL ===
+                const tail = new THREE.Group();
+                tail.name = 'tail';
+                
+                const tailBase = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.08, 0.08, 0.4, 12),
+                    armMaterial
+                );
+                tailBase.position.set(0, -0.2, -0.4);
+                tailBase.rotation.x = -0.5;
+                tailBase.castShadow = true;
+                tail.add(tailBase);
+                
+                const tailTip = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 16, 16),
+                    armMaterial
+                );
+                tailTip.position.set(0, -0.3, -0.6);
+                tailTip.castShadow = true;
+                tail.add(tailTip);
+                
+                ryan.add(tail);
+                
+                this.player.add(ryan);
+                this.player.userData.character = ryan;
+            }
+
+            // 🐰 무지 & 콘
+            createMuzi() {
+                const muzi = new THREE.Group();
+                muzi.name = 'muzi';
+                
+                // === BODY (노란 단무지) ===
+                const body = new THREE.Group();
+                body.name = 'body';
+                
+                const bodyMesh = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.45, 1, 20, 32),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFFF00, // 노란색
+                        roughness: 0.7,
+                        metalness: 0.0
+                    })
+                );
+                bodyMesh.castShadow = true;
+                bodyMesh.receiveShadow = true;
+                body.add(bodyMesh);
+                
+                body.position.y = 0.3;
+                muzi.add(body);
+                
+                // === HEAD (흰색 토끼 옷) ===
+                const head = new THREE.Group();
+                head.name = 'head';
+                
+                // 얼굴
+                const face = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.6, 32, 32),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFFFFF, // 흰색
+                        roughness: 0.7
+                    })
+                );
+                face.castShadow = true;
+                face.receiveShadow = true;
+                head.add(face);
+                
+                // 토끼 귀 (길쭉한 캡슐)
+                const earMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xFFFFFF,
+                    roughness: 0.7
+                });
+                
+                const leftEar = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.15, 0.8, 12, 16),
+                    earMaterial
+                );
+                leftEar.position.set(-0.3, 0.8, 0);
+                leftEar.rotation.z = -0.2;
+                leftEar.castShadow = true;
+                head.add(leftEar);
+                
+                const rightEar = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.15, 0.8, 12, 16),
+                    earMaterial
+                );
+                rightEar.position.set(0.3, 0.8, 0);
+                rightEar.rotation.z = 0.2;
+                rightEar.castShadow = true;
+                head.add(rightEar);
+                
+                // 귀 안쪽 (핑크)
+                const innerEarMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xffb6c1,
+                    roughness: 0.6
+                });
+                
+                const leftInnerEar = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.08, 0.5, 8, 12),
+                    innerEarMaterial
+                );
+                leftInnerEar.position.set(-0.3, 0.8, 0.05);
+                leftInnerEar.rotation.z = -0.2;
+                head.add(leftInnerEar);
+                
+                const rightInnerEar = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.08, 0.5, 8, 12),
+                    innerEarMaterial
+                );
+                rightInnerEar.position.set(0.3, 0.8, 0.05);
+                rightInnerEar.rotation.z = 0.2;
+                head.add(rightInnerEar);
+                
+                // 눈
+                const eyeMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0x000000,
+                    roughness: 0.3
+                });
+                
+                const leftEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 16, 16),
+                    eyeMaterial
+                );
+                leftEye.position.set(-0.2, 0.1, 0.55);
+                head.add(leftEye);
+                
+                const rightEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 16, 16),
+                    eyeMaterial
+                );
+                rightEye.position.set(0.2, 0.1, 0.55);
+                head.add(rightEye);
+                
+                // 빨간 볼 터치
+                const cheekMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xff6b6b,
+                    roughness: 0.5,
+                    emissive: 0xff6b6b,
+                    emissiveIntensity: 0.2
+                });
+                
+                const leftCheek = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.12, 16, 16),
+                    cheekMaterial
+                );
+                leftCheek.position.set(-0.35, -0.05, 0.5);
+                leftCheek.scale.set(1, 0.8, 0.5);
+                head.add(leftCheek);
+                
+                const rightCheek = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.12, 16, 16),
+                    cheekMaterial
+                );
+                rightCheek.position.set(0.35, -0.05, 0.5);
+                rightCheek.scale.set(1, 0.8, 0.5);
+                head.add(rightCheek);
+                
+                // 입 (웃는 표정)
+                const mouthShape = new THREE.Shape();
+                mouthShape.moveTo(-0.1, 0);
+                mouthShape.quadraticCurveTo(0, -0.08, 0.1, 0);
+                
+                const mouth = new THREE.Mesh(
+                    new THREE.ShapeGeometry(mouthShape),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x000000,
+                        side: THREE.DoubleSide
+                    })
+                );
+                mouth.position.set(0, -0.15, 0.58);
+                head.add(mouth);
+                
+                head.position.y = 1.1;
+                muzi.add(head);
+                
+                // === ARMS ===
+                const arms = new THREE.Group();
+                arms.name = 'arms';
+                
+                const armMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xFFFF00,
+                    roughness: 0.7
+                });
+                
+                const leftArm = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.12, 0.5, 12, 16),
+                    armMaterial
+                );
+                leftArm.position.set(-0.5, 0.5, 0);
+                leftArm.rotation.z = 0.4;
+                leftArm.castShadow = true;
+                leftArm.name = 'leftArm';
+                arms.add(leftArm);
+                
+                const rightArm = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.12, 0.5, 12, 16),
+                    armMaterial
+                );
+                rightArm.position.set(0.5, 0.5, 0);
+                rightArm.rotation.z = -0.4;
+                rightArm.castShadow = true;
+                rightArm.name = 'rightArm';
+                arms.add(rightArm);
+                
+                muzi.add(arms);
+                
+                // === LEGS ===
+                const legs = new THREE.Group();
+                legs.name = 'legs';
+                
+                const leftLeg = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.15, 0.4, 12, 16),
+                    armMaterial
+                );
+                leftLeg.position.set(-0.2, -0.5, 0);
+                leftLeg.castShadow = true;
+                leftLeg.name = 'leftLeg';
+                legs.add(leftLeg);
+                
+                const rightLeg = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.15, 0.4, 12, 16),
+                    armMaterial
+                );
+                rightLeg.position.set(0.2, -0.5, 0);
+                rightLeg.castShadow = true;
+                rightLeg.name = 'rightLeg';
+                legs.add(rightLeg);
+                
+                muzi.add(legs);
+                
+                // === 🐊 CON (작은 악어) ===
+                const con = new THREE.Group();
+                con.name = 'con';
+                
+                // 콘 몸통
+                const conBody = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.15, 0.3, 12, 16),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x00FF00, // 초록색
+                        roughness: 0.7
+                    })
+                );
+                conBody.rotation.z = Math.PI / 2;
+                conBody.castShadow = true;
+                con.add(conBody);
+                
+                // 콘 머리
+                const conHead = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.18, 16, 16),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x00FF00,
+                        roughness: 0.7
+                    })
+                );
+                conHead.position.set(0.25, 0, 0);
+                conHead.scale.set(1.2, 0.8, 0.9);
+                conHead.castShadow = true;
+                con.add(conHead);
+                
+                // 콘 눈
+                const conEyeMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0x000000,
+                    roughness: 0.3
+                });
+                
+                const conLeftEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.04, 12, 12),
+                    conEyeMaterial
+                );
+                conLeftEye.position.set(0.32, 0.1, 0.12);
+                con.add(conLeftEye);
+                
+                const conRightEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.04, 12, 12),
+                    conEyeMaterial
+                );
+                conRightEye.position.set(0.32, 0.1, -0.12);
+                con.add(conRightEye);
+                
+                // 콘 꼬리
+                const conTail = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.08, 0.2, 12),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x00FF00,
+                        roughness: 0.7
+                    })
+                );
+                conTail.rotation.z = -Math.PI / 2;
+                conTail.position.set(-0.3, 0, 0);
+                conTail.castShadow = true;
+                con.add(conTail);
+                
+                // 콘 등 톱니 (작은 삼각형들)
+                for (let i = 0; i < 3; i++) {
+                    const spike = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.05, 0.1, 3),
+                        new THREE.MeshToonMaterial({ 
+                            color: 0x00cc00,
+                            roughness: 0.7
+                        })
+                    );
+                    spike.position.set(-0.05 + i * 0.1, 0.18, 0);
+                    spike.castShadow = true;
+                    con.add(spike);
+                }
+                
+                con.position.set(0.8, 0, 0.3);
+                con.scale.set(0.8, 0.8, 0.8);
+                muzi.add(con);
+                
+                this.player.add(muzi);
+                this.player.userData.character = muzi;
+            }
+
+            // 🍑 어피치 - 복숭아 머리
+            createApeach() {
+                const apeach = new THREE.Group();
+                apeach.name = 'apeach';
+                
+                // === HEAD (복숭아 모양) ===
+                const head = new THREE.Group();
+                head.name = 'head';
+                
+                // 복숭아 머리 (하트 모양에 가깝게)
+                const headTop = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.7, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.7),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFB6C1, // 분홍색
+                        roughness: 0.7,
+                        metalness: 0.0
+                    })
+                );
+                headTop.position.y = 0.1;
+                headTop.castShadow = true;
+                headTop.receiveShadow = true;
+                head.add(headTop);
+                
+                const headBottom = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.65, 32, 32),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFB6C1,
+                        roughness: 0.7
+                    })
+                );
+                headBottom.scale.set(1, 0.9, 0.95);
+                headBottom.position.y = -0.2;
+                headBottom.castShadow = true;
+                head.add(headBottom);
+                
+                // 복숭아 잎 (초록색)
+                const leaf = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.25, 0.5, 12),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x4caf50,
+                        roughness: 0.7,
+                        emissive: 0x2e7d32,
+                        emissiveIntensity: 0.2
+                    })
+                );
+                leaf.position.set(0.15, 0.8, 0);
+                leaf.rotation.z = -0.3;
+                leaf.castShadow = true;
+                head.add(leaf);
+                
+                // 눈 (장난스러운 - 윙크)
+                const eyeMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0x000000,
+                    roughness: 0.3
+                });
+                
+                // 왼쪽 눈 (윙크 - 선으로)
+                const leftEyeShape = new THREE.Shape();
+                leftEyeShape.moveTo(-0.12, 0);
+                leftEyeShape.lineTo(0.12, 0);
+                
+                const leftEye = new THREE.Mesh(
+                    new THREE.ShapeGeometry(leftEyeShape),
+                    eyeMaterial
+                );
+                leftEye.position.set(-0.22, 0.05, 0.62);
+                head.add(leftEye);
+                
+                // 오른쪽 눈 (열린 눈)
+                const rightEye = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 16, 16),
+                    eyeMaterial
+                );
+                rightEye.position.set(0.22, 0.05, 0.62);
+                head.add(rightEye);
+                
+                // 발그레한 볼
+                const cheekMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xFF69B4, // 진분홍
+                    roughness: 0.5,
+                    emissive: 0xFF69B4,
+                    emissiveIntensity: 0.3
+                });
+                
+                const leftCheek = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 16, 16),
+                    cheekMaterial
+                );
+                leftCheek.position.set(-0.4, -0.1, 0.55);
+                leftCheek.scale.set(1, 0.7, 0.4);
+                head.add(leftCheek);
+                
+                const rightCheek = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 16, 16),
+                    cheekMaterial
+                );
+                rightCheek.position.set(0.4, -0.1, 0.55);
+                rightCheek.scale.set(1, 0.7, 0.4);
+                head.add(rightCheek);
+                
+                // 입 (웃는 곡선)
+                const mouthShape = new THREE.Shape();
+                mouthShape.moveTo(-0.2, 0);
+                mouthShape.quadraticCurveTo(0, -0.12, 0.2, 0);
+                
+                const mouth = new THREE.Mesh(
+                    new THREE.ShapeGeometry(mouthShape),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0x000000,
+                        side: THREE.DoubleSide
+                    })
+                );
+                mouth.position.set(0, -0.25, 0.6);
+                head.add(mouth);
+                
+                head.position.y = 1;
+                apeach.add(head);
+                
+                // === BODY ===
+                const body = new THREE.Group();
+                body.name = 'body';
+                
+                const bodyMesh = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.48, 0.9, 20, 32),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFB6C1,
+                        roughness: 0.7,
+                        metalness: 0.0
+                    })
+                );
+                bodyMesh.castShadow = true;
+                bodyMesh.receiveShadow = true;
+                body.add(bodyMesh);
+                
+                body.position.y = 0;
+                apeach.add(body);
+                
+                // === ARMS ===
+                const arms = new THREE.Group();
+                arms.name = 'arms';
+                
+                const armMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xFFB6C1,
+                    roughness: 0.7
+                });
+                
+                const leftArm = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.14, 0.55, 12, 16),
+                    armMaterial
+                );
+                leftArm.position.set(-0.52, 0.25, 0);
+                leftArm.rotation.z = 0.35;
+                leftArm.castShadow = true;
+                leftArm.name = 'leftArm';
+                arms.add(leftArm);
+                
+                const rightArm = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.14, 0.55, 12, 16),
+                    armMaterial
+                );
+                rightArm.position.set(0.52, 0.25, 0);
+                rightArm.rotation.z = -0.35;
+                rightArm.castShadow = true;
+                rightArm.name = 'rightArm';
+                arms.add(rightArm);
+                
+                apeach.add(arms);
+                
+                // === LEGS (섹시한 뒤태 강조) ===
+                const legs = new THREE.Group();
+                legs.name = 'legs';
+                
+                const legMaterial = new THREE.MeshToonMaterial({ 
+                    color: 0xFFB6C1,
+                    roughness: 0.7
+                });
+                
+                const leftLeg = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.17, 0.5, 12, 16),
+                    legMaterial
+                );
+                leftLeg.position.set(-0.22, -0.7, 0);
+                leftLeg.castShadow = true;
+                leftLeg.name = 'leftLeg';
+                legs.add(leftLeg);
+                
+                const rightLeg = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.17, 0.5, 12, 16),
+                    legMaterial
+                );
+                rightLeg.position.set(0.22, -0.7, 0);
+                rightLeg.castShadow = true;
+                rightLeg.name = 'rightLeg';
+                legs.add(rightLeg);
+                
+                apeach.add(legs);
+                
+                // === BUTT (귀여운 뒤태 강조) ===
+                const butt = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.35, 24, 24),
+                    new THREE.MeshToonMaterial({ 
+                        color: 0xFFB6C1,
+                        roughness: 0.7
+                    })
+                );
+                butt.scale.set(1.2, 0.9, 0.8);
+                butt.position.set(0, -0.3, -0.3);
+                butt.castShadow = true;
+                apeach.add(butt);
+                
+                this.player.add(apeach);
+                this.player.userData.character = apeach;
+            }
+
+            // 캐릭터 애니메이션 (Idle & Walk)
+            animateCharacter() {
+                if (!this.player.userData.character) return;
+                
+                const character = this.player.userData.character;
+                const time = this.time;
+                const isMoving = this.keyState.KeyW || this.keyState.KeyS || this.keyState.KeyA || this.keyState.KeyD;
+                
+                // Head Bobbing (숨쉬기)
+                const head = character.getObjectByName('head');
+                if (head) {
+                    if (isMoving) {
+                        head.position.y = 1 + Math.sin(time * 8) * 0.05;
+                        head.rotation.z = Math.sin(time * 8) * 0.05;
+                    } else {
+                        head.position.y = 1 + Math.sin(time * 2) * 0.02;
+                    }
+                }
+                
+                // Body Bobbing
+                const body = character.getObjectByName('body');
+                if (body && isMoving) {
+                    body.position.y = Math.sin(time * 8) * 0.03;
+                }
+                
+                // Arms & Legs Swing
+                const arms = character.getObjectByName('arms');
+                const legs = character.getObjectByName('legs');
+                
+                if (isMoving) {
+                    // 걷기 애니메이션
+                    if (arms) {
+                        const leftArm = arms.getObjectByName('leftArm');
+                        const rightArm = arms.getObjectByName('rightArm');
+                        
+                        if (leftArm) leftArm.rotation.x = Math.sin(time * 8) * 0.5;
+                        if (rightArm) rightArm.rotation.x = -Math.sin(time * 8) * 0.5;
+                    }
+                    
+                    if (legs) {
+                        const leftLeg = legs.getObjectByName('leftLeg');
+                        const rightLeg = legs.getObjectByName('rightLeg');
+                        
+                        if (leftLeg) leftLeg.rotation.x = Math.sin(time * 8) * 0.4;
+                        if (rightLeg) rightLeg.rotation.x = -Math.sin(time * 8) * 0.4;
+                    }
+                } else {
+                    // Idle 애니메이션 (원위치)
+                    if (arms) {
+                        const leftArm = arms.getObjectByName('leftArm');
+                        const rightArm = arms.getObjectByName('rightArm');
+                        
+                        if (leftArm) leftArm.rotation.x = Math.sin(time * 2) * 0.1;
+                        if (rightArm) rightArm.rotation.x = -Math.sin(time * 2) * 0.1;
+                    }
+                    
+                    if (legs) {
+                        const leftLeg = legs.getObjectByName('leftLeg');
+                        const rightLeg = legs.getObjectByName('rightLeg');
+                        
+                        if (leftLeg) leftLeg.rotation.x = 0;
+                        if (rightLeg) rightLeg.rotation.x = 0;
+                    }
+                }
+                
+                // 꼬리 흔들기 (라이언)
+                if (character.name === 'ryan') {
+                    const tail = character.getObjectByName('tail');
+                    if (tail) {
+                        tail.rotation.y = Math.sin(time * 3) * 0.3;
+                    }
+                }
+                
+                // 콘 애니메이션 (무지)
+                if (character.name === 'muzi') {
+                    const con = character.getObjectByName('con');
+                    if (con) {
+                        con.position.y = Math.sin(time * 4) * 0.05;
+                        con.rotation.z = Math.sin(time * 3) * 0.1;
+                    }
+                }
+            }
+
+            setupControls() {
+                // ⌨️ WASD 키보드 입력 (PC 게임 표준)
+                window.addEventListener('keydown', (e) => {
+                    // KeyboardEvent.code로 정확한 키 인식
+                    if (this.keyState.hasOwnProperty(e.code)) {
+                        this.keyState[e.code] = true;
+                    }
+                    
+                    // 점프 (Space)
+                    if (e.code === 'Space' && this.isGrounded) {
+                        this.jumpVelocity = this.jumpPower;
+                        this.isGrounded = false;
+                        e.preventDefault(); // 스페이스바 스크롤 방지
+                    }
+                    
+                    // 캐릭터 변경 (Digit1, Digit2, Digit3)
+                    if (e.code === 'Digit1') {
+                        this.currentCharacter = 'ryan';
+                        this.createCharacter('ryan');
+                    }
+                    if (e.code === 'Digit2') {
+                        this.currentCharacter = 'muzi';
+                        this.createCharacter('muzi');
+                    }
+                    if (e.code === 'Digit3') {
+                        this.currentCharacter = 'apeach';
+                        this.createCharacter('apeach');
+                    }
+                    
+                    // 🔫 전투 모드 토글 (KeyQ)
+                    if (e.code === 'KeyQ') {
+                        this.toggleCombatMode();
+                    }
+                });
+
+                window.addEventListener('keyup', (e) => {
+                    // 키 상태 해제
+                    if (this.keyState.hasOwnProperty(e.code)) {
+                        this.keyState[e.code] = false;
+                    }
+                });
+
+                const canvas = document.getElementById('gameCanvas');
+                
+                // 🖱️ 마우스 클릭 이벤트 (모드별 완전 분리!)
+                canvas.addEventListener('mousedown', (e) => {
+                    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    // 🔫 전투 모드: 좌클릭 = 발사
+                    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    if (this.combatMode && e.button === 0) {
+                        this.shoot();
+                        console.log('🔫 전투 모드: 발사!');
+                        return; // 다른 동작 차단
+                    }
+                    
+                    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    // 🏗️ 건축/제거 모드: 좌클릭 = 블록 배치/제거
+                    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    if (!this.combatMode && e.button === 0) {
+                        this.handleBlockInteraction(e);
+                        if (this.buildMode) {
+                            console.log('🏗️ 건축 모드: 블록 배치!');
+                        } else {
+                            console.log('🗑️ 제거 모드: 블록 제거!');
+                        }
+                        return; // 다른 동작 차단
+                    }
+                    
+                    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    // 🎥 카메라 회전: 우클릭 드래그
+                    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    if (e.button === 2) { // 우클릭만
+                        this.mouseDown = true;
+                        this.mousePos = { x: e.clientX, y: e.clientY };
+                        canvas.style.cursor = 'grabbing';
+                    }
+                });
+
+                canvas.addEventListener('mousemove', (e) => {
+                    if (this.mouseDown) {
+                        const deltaX = e.clientX - this.mousePos.x;
+                        const deltaY = e.clientY - this.mousePos.y;
+                        
+                        // 카메라 수평/수직 회전
+                        this.cameraAngle.horizontal -= deltaX * 0.005;
+                        this.cameraAngle.vertical -= deltaY * 0.003;
+                        
+                        // 수직 각도 제한 (너무 위/아래 안 보게)
+                        this.cameraAngle.vertical = Math.max(-0.5, Math.min(1.2, this.cameraAngle.vertical));
+                        
+                        this.mousePos = { x: e.clientX, y: e.clientY };
+                    }
+                });
+
+                canvas.addEventListener('mouseup', () => {
+                    this.mouseDown = false;
+                    canvas.style.cursor = 'default';
+                });
+
+                canvas.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+
+                // 🔍 줌 인/아웃 (마우스 휠)
+                canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    this.cameraDistance += e.deltaY * 0.01;
+                    this.cameraDistance = Math.max(2, Math.min(15, this.cameraDistance)); // 최소 2 ~ 최대 15
+                });
+
+                document.querySelectorAll('.character-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.character-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentCharacter = e.target.dataset.char;
+                        this.createCharacter(this.currentCharacter);
+                    });
+                });
+
+                document.getElementById('buildMode').addEventListener('click', () => {
+                    this.buildMode = true;
+                    document.getElementById('buildMode').classList.add('active');
+                    document.getElementById('removeMode').classList.remove('active');
+                });
+
+                document.getElementById('removeMode').addEventListener('click', () => {
+                    this.buildMode = false;
+                    document.getElementById('removeMode').classList.add('active');
+                    document.getElementById('buildMode').classList.remove('active');
+                });
+
+                document.querySelectorAll('.block-option').forEach(opt => {
+                    opt.addEventListener('click', (e) => {
+                        document.querySelectorAll('.block-option').forEach(o => o.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.selectedBlock = e.target.dataset.block;
+                    });
+                });
+
+                // 3D 모델 모드 버튼
+                document.getElementById('modelMode').addEventListener('click', () => {
+                    this.buildMode = false;
+                    document.getElementById('buildMode').classList.remove('active');
+                    document.getElementById('removeMode').classList.remove('active');
+                    document.getElementById('modelMode').classList.add('active');
+                    document.getElementById('modelPanel').style.display = 'block';
+                });
+
+                document.getElementById('buildMode').addEventListener('click', () => {
+                    document.getElementById('modelPanel').style.display = 'none';
+                });
+
+                document.getElementById('removeMode').addEventListener('click', () => {
+                    document.getElementById('modelPanel').style.display = 'none';
+                });
+
+                // 🔫 전투 모드 버튼
+                document.getElementById('combatModeBtn').addEventListener('click', () => {
+                    this.toggleCombatMode();
+                });
+            }
+
+            // 🔫 전투 모드 토글
+            toggleCombatMode() {
+                this.combatMode = !this.combatMode;
+                
+                // UI 업데이트
+                const crosshair = document.getElementById('crosshair');
+                const combatModeUI = document.getElementById('combatMode');
+                const combatBtn = document.getElementById('combatModeBtn');
+                
+                if (this.combatMode) {
+                    // 전투 모드 ON
+                    crosshair.classList.add('active');
+                    combatModeUI.classList.add('active');
+                    combatBtn.classList.add('active');
+                    this.weapon.visible = true;
+                    
+                    // 건축 모드 비활성화
+                    this.buildMode = false;
+                    document.getElementById('buildMode').classList.remove('active');
+                    document.getElementById('removeMode').classList.remove('active');
+                    
+                    // 🐞 디버깅 로그
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('🔫🔫🔫 전투 모드 활성화! 🔫🔫🔫');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('✅ 총 보임:', this.weapon.visible);
+                    console.log('✅ 총 위치:', this.weapon.position);
+                    console.log('✅ 총 크기:', this.weapon.scale);
+                    console.log('✅ 조준점 활성화:', crosshair.classList.contains('active'));
+                    console.log('💡 좌클릭으로 발사하세요!');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                } else {
+                    // 전투 모드 OFF
+                    crosshair.classList.remove('active');
+                    combatModeUI.classList.remove('active');
+                    combatBtn.classList.remove('active');
+                    this.weapon.visible = false;
+                    
+                    console.log('🔨 건축 모드로 전환');
+                }
+            }
+
+            // 🔫 발사 (Shoot) - 형광 노란색 총알 + 사운드!
+            shoot() {
+                const currentTime = Date.now();
+                
+                // 발사 속도 제한 (연사 방지)
+                if (currentTime - this.lastShotTime < this.fireRate) {
+                    return;
+                }
+                this.lastShotTime = currentTime;
+                
+                // 🔊 발사 효과음 재생!
+                this.playShootSound();
+                
+                // 💥 형광 노란색 총알 생성 (어두운 곳에서도 빛남!)
+                const bullet = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.2, 16, 16), // 반지름 0.2
+                    new THREE.MeshBasicMaterial({
+                        color: 0xFFFF00, // 형광 노란색
+                        wireframe: false
+                    })
+                );
+                
+                // 🎯 발사 위치: 총구 마커(초록색)의 월드 좌표!
+                const startPos = new THREE.Vector3();
+                if (this.muzzleFlash) {
+                    this.muzzleFlash.getWorldPosition(startPos);
+                } else {
+                    // Fallback: 캐릭터 머리 위 + 앞쪽
+                    startPos.copy(this.player.position);
+                    startPos.y += 2.0;
+                    const cameraDir = new THREE.Vector3();
+                    this.camera.getWorldDirection(cameraDir);
+                    startPos.add(cameraDir.multiplyScalar(1.5));
+                }
+                
+                bullet.position.copy(startPos);
+                bullet.castShadow = true;
+                
+                // 🧭 카메라가 보는 방향으로 발사 (TPS 표준)
+                const direction = new THREE.Vector3();
+                this.camera.getWorldDirection(direction);
+                direction.normalize();
+                
+                // 총알 속도: 1.0 (빠르게!)
+                const bulletVelocity = direction.clone().multiplyScalar(1.0);
+                
+                // 총알 데이터
+                bullet.userData = {
+                    velocity: bulletVelocity,
+                    createdAt: currentTime,
+                    lifetime: this.bulletLifetime
+                };
+                
+                this.scene.add(bullet);
+                this.bullets.push(bullet);
+                
+                // 🐞 디버깅 로그
+                console.log('💥💥💥 BANG! 총알 발사!');
+                console.log('   위치:', `x:${startPos.x.toFixed(2)}, y:${startPos.y.toFixed(2)}, z:${startPos.z.toFixed(2)}`);
+                console.log('   방향:', `x:${direction.x.toFixed(2)}, y:${direction.y.toFixed(2)}, z:${direction.z.toFixed(2)}`);
+                console.log('   속도:', bulletVelocity);
+                console.log('   총 총알 수:', this.bullets.length);
+                
+                // 💥 반동 애니메이션
+                if (this.weapon.visible) {
+                    const originalZ = this.weapon.position.z;
+                    this.weapon.position.z += 0.2;
+                    setTimeout(() => {
+                        this.weapon.position.z = originalZ;
+                    }, 100);
+                }
+                
+                // 🔊 콘솔에 큰 알림
+                console.log('🔫🔫🔫 총알이 날아갑니다! 화면을 주목하세요! 🔫🔫🔫');
+            }
+
+            // 💨 총알 업데이트 (이동 + 수명 관리)
+            updateBullets() {
+                const currentTime = Date.now();
+                const bulletsToRemove = [];
+                
+                for (let i = 0; i < this.bullets.length; i++) {
+                    const bullet = this.bullets[i];
+                    const userData = bullet.userData;
+                    
+                    // 총알 이동 (매 프레임)
+                    bullet.position.add(userData.velocity);
+                    
+                    // 생명 시간 체크 (2초 후 제거)
+                    if (currentTime - userData.createdAt > userData.lifetime) {
+                        bulletsToRemove.push(i);
+                        continue;
+                    }
+                    
+                    // 맵 밖으로 나가면 제거
+                    const limit = this.villageSize / 2;
+                    if (Math.abs(bullet.position.x) > limit || 
+                        Math.abs(bullet.position.z) > limit ||
+                        bullet.position.y < 0 || bullet.position.y > 100) {
+                        bulletsToRemove.push(i);
+                    }
+                }
+                
+                // 총알 제거 (역순으로)
+                for (let i = bulletsToRemove.length - 1; i >= 0; i--) {
+                    const index = bulletsToRemove[i];
+                    const bullet = this.bullets[index];
+                    this.scene.remove(bullet);
+                    bullet.geometry.dispose();
+                    bullet.material.dispose();
+                    this.bullets.splice(index, 1);
+                }
+            }
+
+            // 💥 충돌 감지 (총알 vs 슬라임)
+            checkCollisions() {
+                const bulletsToRemove = [];
+                const monstersToRemove = [];
+                
+                // 모든 총알 vs 모든 몬스터 체크
+                for (let i = 0; i < this.bullets.length; i++) {
+                    const bullet = this.bullets[i];
+                    
+                    for (let j = 0; j < this.monsters.length; j++) {
+                        const monster = this.monsters[j];
+                        
+                        // 거리 계산
+                        const distance = bullet.position.distanceTo(monster.position);
+                        const hitRadius = monster.userData.radius + 0.2; // 총알 반지름 포함
+                        
+                        // 충돌 판정!
+                        if (distance < hitRadius) {
+                            // 충돌 효과
+                            bulletsToRemove.push(i);
+                            monstersToRemove.push(j);
+                            
+                            // 🎉 파티클 효과 (간단한 폭발)
+                            this.createHitEffect(monster.position);
+                            
+                            // 로그
+                            console.log('💥 슬라임 처치! 남은 슬라임:', this.monsters.length - 1);
+                            
+                            break; // 이 총알은 이미 충돌했으므로 다음 총알로
+                        }
+                    }
+                }
+                
+                // 충돌한 총알 제거 (역순)
+                for (let i = bulletsToRemove.length - 1; i >= 0; i--) {
+                    const index = bulletsToRemove[i];
+                    if (this.bullets[index]) {
+                        const bullet = this.bullets[index];
+                        this.scene.remove(bullet);
+                        bullet.geometry.dispose();
+                        bullet.material.dispose();
+                        this.bullets.splice(index, 1);
+                    }
+                }
+                
+                // 충돌한 몬스터 제거 (역순)
+                for (let i = monstersToRemove.length - 1; i >= 0; i--) {
+                    const index = monstersToRemove[i];
+                    if (this.monsters[index]) {
+                        const monster = this.monsters[index];
+                        this.scene.remove(monster);
+                        this.monsters.splice(index, 1);
+                    }
+                }
+                
+                // 모든 슬라임 처치 시
+                if (this.monsters.length === 0) {
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('🎉🎉🎉 모든 슬라임 처치 완료! 🎉🎉🎉');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    
+                    // 3초 후 새로운 슬라임 소환
+                    setTimeout(() => {
+                        this.spawnMonsters();
+                    }, 3000);
+                }
+            }
+
+            // 🎉 피격 효과 (간단한 파티클)
+            createHitEffect(position) {
+                // 초록색 파티클 5개 생성
+                for (let i = 0; i < 5; i++) {
+                    const particle = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.1, 8, 8),
+                        new THREE.MeshBasicMaterial({ color: 0x00FF00 })
+                    );
+                    
+                    particle.position.copy(position);
+                    
+                    // 랜덤 방향으로 튀김
+                    const velocity = new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.3,
+                        Math.random() * 0.3,
+                        (Math.random() - 0.5) * 0.3
+                    );
+                    
+                    particle.userData = {
+                        velocity: velocity,
+                        createdAt: Date.now(),
+                        lifetime: 500 // 0.5초
+                    };
+                    
+                    this.scene.add(particle);
+                    this.bullets.push(particle); // bullets 배열에 추가 (같은 시스템으로 관리)
+                }
+            }
+
+            // 🏗️ 3D 모델 로더 시스템
+            // 🏗️ BIM 모델 UI 설정
+            setupModelLoaders() {
+                const fileInput = document.getElementById('modelFileInput');
+                const scaleSlider = document.getElementById('modelScale');
+                const rotationSlider = document.getElementById('modelRotation');
+                
+                // 파일 선택
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.loadModelFile(file);
+                    }
+                });
+
+                // 크기 조절
+                scaleSlider.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    this.modelScale = value;
+                    if (this.modelPreview) {
+                        this.modelPreview.scale.set(value, value, value);
+                    }
+                });
+
+                // 회전 조절
+                rotationSlider.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    this.modelRotation = value * (Math.PI / 180);
+                    if (this.modelPreview) {
+                        this.modelPreview.rotation.y = this.modelRotation;
+                    }
+                });
+
+                // 배치 버튼
+                document.getElementById('placeModel').addEventListener('click', () => {
+                    if (this.modelPreview) {
+                        this.placeCurrentModel();
+                    }
+                });
+
+                // 취소 버튼
+                document.getElementById('cancelModel').addEventListener('click', () => {
+                    this.cancelModelPreview();
+                });
+            }
+
+            // ❌ 모델 프리뷰 취소
+            cancelModelPreview() {
+                if (this.modelPreview) {
+                    this.scene.remove(this.modelPreview);
+                    this.modelPreview = null;
+                    this.currentModel = null;
+                }
+                
+                document.getElementById('modelControls').style.display = 'none';
+                document.getElementById('modelFileInput').value = '';
+                document.getElementById('modelScale').value = 1;
+                document.getElementById('modelRotation').value = 0;
+                
+                console.log('❌ 모델 프리뷰 취소됨');
+            }
+
+            // 파일 로드
+            loadModelFile(file) {
+                const fileName = file.name;
+                const fileExtension = fileName.split('.').pop().toLowerCase();
+                
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    const contents = e.target.result;
+                    
+                    if (fileExtension === 'glb' || fileExtension === 'gltf') {
+                        this.loadGLTF(contents, fileName);
+                    } else if (fileExtension === 'obj') {
+                        this.loadOBJ(contents, fileName);
+                    }
+                };
+                
+                if (fileExtension === 'glb') {
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    reader.readAsText(file);
+                }
+            }
+
+            // 🎨 GLB/GLTF 로드 (ES Module 방식)
+            loadGLTF(data, fileName, isBinary = true) {
+                console.log(`🎨 GLTF 파싱 시작: ${fileName}`);
+                
+                const loader = this.gltfLoader;
+                
+                const onLoad = (gltf) => {
+                    console.log('✅ GLTF 로드 성공!');
+                    this.prepareModel(gltf.scene, fileName);
+                };
+                
+                const onError = (error) => {
+                    console.error('❌ GLTF 로드 오류:', error);
+                    alert(`GLB/GLTF 파일을 불러올 수 없습니다.\n오류: ${error.message}`);
+                };
+                
+                loader.parse(data, '', onLoad, onError);
+            }
+
+            // 📐 OBJ 로드 (ES Module 방식)
+            loadOBJ(data, fileName) {
+                console.log(`📐 OBJ 파싱 시작: ${fileName}`);
+                
+                const loader = this.objLoader;
+                
+                try {
+                    const model = loader.parse(data);
+                    console.log('✅ OBJ 로드 성공!');
+                    this.prepareModel(model, fileName);
+                } catch (error) {
+                    console.error('❌ OBJ 로드 오류:', error);
+                    alert(`OBJ 파일을 불러올 수 없습니다.\n오류: ${error.message}`);
+                }
+            }
+
+            // 🔧 모델 준비 (BIM 최적화)
+            prepareModel(model, fileName) {
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('🔧 BIM 모델 자동 스케일링 시작...');
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                
+                // 기존 프리뷰 제거
+                if (this.modelPreview) {
+                    this.scene.remove(this.modelPreview);
+                }
+
+                // 📏 1단계: 바운딩 박스 측정
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+                
+                console.log(`📐 원본 크기 (Original Size):`);
+                console.log(`   Width (X):  ${size.x.toFixed(4)} units`);
+                console.log(`   Height (Y): ${size.y.toFixed(4)} units ← 이 값이 중요!`);
+                console.log(`   Depth (Z):  ${size.z.toFixed(4)} units`);
+                console.log(`   Center: (${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)})`);
+                
+                // 🎯 2단계: 타겟 높이 기준 스케일 계산
+                const targetHeight = 2.0; // 사람 키 (2미터)
+                const originalHeight = size.y;
+                const scaleFactor = targetHeight / originalHeight;
+                
+                console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+                console.log(`🎯 자동 스케일링 계산:`);
+                console.log(`   Original Model Height: ${originalHeight.toFixed(4)} units`);
+                console.log(`   Target Height: ${targetHeight.toFixed(2)} units (사람 키)`);
+                console.log(`   ⚡ Applied Scale Factor: ${scaleFactor.toFixed(2)}x`);
+                
+                if (scaleFactor > 1000) {
+                    console.log(`   ⚠️ 경고: 모델이 극도로 작습니다! (${scaleFactor.toFixed(0)}배 확대)`);
+                    console.log(`   💡 원본 모델 단위를 확인하세요 (mm → m 변환 필요?)`);
+                } else if (scaleFactor < 0.001) {
+                    console.log(`   ⚠️ 경고: 모델이 극도로 큽니다! (${(1/scaleFactor).toFixed(0)}배 축소)`);
+                }
+                console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+                
+                // 📐 스케일 적용
+                model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+                // 📍 3단계: 위치 보정 (바닥에 맞추기)
+                // 스케일 적용 후 다시 바운딩 박스 계산
+                box.setFromObject(model);
+                const newSize = box.getSize(new THREE.Vector3());
+                const newCenter = box.getCenter(new THREE.Vector3());
+                
+                // 중심을 원점으로
+                model.position.x -= newCenter.x;
+                model.position.z -= newCenter.z;
+                
+                // 바닥(min.y)을 y=0에 맞춤
+                const minY = box.min.y;
+                model.position.y = -minY;
+                
+                console.log(`📍 위치 보정 완료:`);
+                console.log(`   조정 후 높이: ${newSize.y.toFixed(2)} units (≈${targetHeight.toFixed(2)}m)`);
+                console.log(`   바닥 Y 좌표: ${model.position.y.toFixed(2)}`);
+
+                // 🌑 그림자 & 재질 설정 (BIM 최적화)
+                let meshCount = 0;
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        meshCount++;
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        
+                        // 재질이 없으면 기본 재질
+                        if (!child.material) {
+                            child.material = new THREE.MeshStandardMaterial({
+                                color: 0xcccccc,
+                                roughness: 0.7,
+                                metalness: 0.2
+                            });
+                        }
+                        
+                        // ⚡ 양면 렌더링 (BIM 단면 호환성)
+                        if (child.material) {
+                            child.material.side = THREE.DoubleSide;
+                        }
+                    }
+                });
+                
+                console.log(`✅ 메쉬 ${meshCount}개 최적화 완료`);
+
+                // 🎯 플레이어 앞 8m에 배치
+                const playerPos = this.player.position.clone();
+                const cameraAngle = this.cameraAngle.horizontal;
+                model.position.x += playerPos.x + Math.sin(cameraAngle) * 8;
+                model.position.z += playerPos.z + Math.cos(cameraAngle) * 8;
+
+                this.scene.add(model);
+                this.modelPreview = model;
+                this.currentModel = {
+                    name: fileName,
+                    originalScale: scaleFactor
+                };
+
+                // UI 표시
+                document.getElementById('modelControls').style.display = 'block';
+                
+                console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+                console.log(`✅ ${fileName} 프리뷰 준비 완료!`);
+                console.log(`   최종 크기: ${newSize.x.toFixed(2)} x ${newSize.y.toFixed(2)} x ${newSize.z.toFixed(2)}`);
+                console.log(`   최종 위치: (${model.position.x.toFixed(2)}, ${model.position.y.toFixed(2)}, ${model.position.z.toFixed(2)})`);
+                console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+            }
+
+            // 모델 배치
+            placeCurrentModel() {
+                if (this.modelPreview && this.currentModel) {
+                    // 배치된 모델로 저장
+                    this.loadedModels.push({
+                        name: this.currentModel.name,
+                        model: this.modelPreview,
+                        position: this.modelPreview.position.clone(),
+                        rotation: this.modelPreview.rotation.clone(),
+                        scale: this.modelPreview.scale.clone()
+                    });
+
+                    // 리스트 업데이트
+                    this.updateModelList();
+
+                    // 프리뷰 초기화
+                    this.modelPreview = null;
+                    this.currentModel = null;
+                    
+                    // UI 초기화
+                    document.getElementById('modelControls').style.display = 'none';
+                    document.getElementById('modelFileInput').value = '';
+                    document.getElementById('modelScale').value = 1;
+                    document.getElementById('modelRotation').value = 0;
+                    
+                    console.log('✅ 모델 배치 완료!');
+                }
+            }
+
+            // 모델 리스트 업데이트
+            updateModelList() {
+                const listElement = document.getElementById('loadedModels');
+                listElement.innerHTML = '';
+                
+                this.loadedModels.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${item.name}</span>
+                        <button onclick="game.removeModel(${index})">삭제</button>
+                    `;
+                    listElement.appendChild(li);
+                });
+            }
+
+            // 모델 제거
+            removeModel(index) {
+                const item = this.loadedModels[index];
+                if (item && item.model) {
+                    this.scene.remove(item.model);
+                    this.loadedModels.splice(index, 1);
+                    this.updateModelList();
+                    console.log('🗑️ 모델 제거됨');
+                }
+            }
+
+            handleBlockInteraction(event) {
+                const mouse = new THREE.Vector2();
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, this.camera);
+                const intersects = raycaster.intersectObjects(this.scene.children, true);
+
+                if (intersects.length > 0) {
+                    const point = intersects[0].point;
+                    const x = Math.floor(point.x / this.gridSize) * this.gridSize;
+                    const y = Math.floor(point.y / this.gridSize) * this.gridSize + 0.5;
+                    const z = Math.floor(point.z / this.gridSize) * this.gridSize;
+                    const key = `${x},${y},${z}`;
+
+                    if (this.buildMode && !this.world.has(key) && y >= 0) {
+                        this.placeBlock(x, y, z, this.selectedBlock);
+                    } else if (!this.buildMode && this.world.has(key)) {
+                        this.removeBlock(key);
+                    }
+                }
+            }
+
+            placeBlock(x, y, z, type) {
+                const colors = {
+                    grass: 0x7ec850,
+                    wood: 0xd2691e,
+                    stone: 0xc0c0c0,
+                    brick: 0xff6b6b
+                };
+
+                // ✨ MeshStandardMaterial로 모든 블록 생성
+                const block = new THREE.Mesh(
+                    new THREE.BoxGeometry(this.gridSize, this.gridSize, this.gridSize),
+                    new THREE.MeshStandardMaterial({ 
+                        color: colors[type],
+                        roughness: 0.7,
+                        metalness: 0.2
+                    })
+                );
+                
+                block.position.set(x, y, z);
+                block.castShadow = true;
+                block.receiveShadow = true;
+                
+                const key = `${x},${y},${z}`;
+                this.world.set(key, block);
+                this.scene.add(block);
+            }
+
+            removeBlock(key) {
+                const block = this.world.get(key);
+                if (block) {
+                    this.scene.remove(block);
+                    this.world.delete(key);
+                }
+            }
+
+            updatePlayer() {
+                // 🏃 물리 기반 부드러운 이동
+                
+                // 🧭 1단계: WASD 입력 수집 (KeyboardEvent.code 기반)
+                const inputVector = new THREE.Vector3();
+                if (this.keyState.KeyW) inputVector.z = 1;   // 전진 (Forward)
+                if (this.keyState.KeyS) inputVector.z = -1;  // 후진 (Backward)
+                if (this.keyState.KeyA) inputVector.x = -1;  // 좌측 (Strafe Left)
+                if (this.keyState.KeyD) inputVector.x = 1;   // 우측 (Strafe Right)
+
+                // 🧭 2단계: 카메라 기준 방향 계산
+                if (inputVector.length() > 0) {
+                    // 대각선 이동 정규화 (W+D 동시 입력 시 속도 증가 방지)
+                    inputVector.normalize();
+                    
+                    // 🎥 카메라가 보는 방향 가져오기 (getWorldDirection)
+                    const cameraDirection = new THREE.Vector3();
+                    this.camera.getWorldDirection(cameraDirection);
+                    
+                    // ⚡ Y축 제거 (평면 이동만)
+                    cameraDirection.y = 0;
+                    cameraDirection.normalize();
+                    
+                    // 🔄 카메라의 오른쪽 방향 계산 (Cross Product)
+                    const cameraRight = new THREE.Vector3();
+                    cameraRight.crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0));
+                    cameraRight.normalize();
+                    
+                    // 🎯 최종 이동 방향 = 전진/후진 + 좌/우
+                    const moveDirection = new THREE.Vector3();
+                    moveDirection.addScaledVector(cameraDirection, inputVector.z); // W/S
+                    moveDirection.addScaledVector(cameraRight, inputVector.x);     // A/D
+                    moveDirection.normalize();
+                    
+                    // ⚡ 가속 (Acceleration)
+                    this.velocity.x += moveDirection.x * this.acceleration;
+                    this.velocity.z += moveDirection.z * this.acceleration;
+                    
+                    // 🚀 최대 속도 제한
+                    const currentSpeed = Math.sqrt(this.velocity.x ** 2 + this.velocity.z ** 2);
+                    if (currentSpeed > this.maxSpeed) {
+                        this.velocity.x = (this.velocity.x / currentSpeed) * this.maxSpeed;
+                        this.velocity.z = (this.velocity.z / currentSpeed) * this.maxSpeed;
+                    }
+                    
+                    // 🔄 캐릭터 회전 (이동 방향을 향하게)
+                    this.targetRotation = Math.atan2(moveDirection.x, moveDirection.z);
+                    
+                    // 부드러운 회전 보간 (Slerp 근사)
+                    let currentRotation = this.player.rotation.y;
+                    let rotationDiff = this.targetRotation - currentRotation;
+                    
+                    // -π ~ π 범위로 정규화
+                    while (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+                    while (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+                    
+                    // 회전 적용 (0.15 = 회전 속도)
+                    this.player.rotation.y += rotationDiff * 0.15;
+                    
+                    this.playerBounce += 0.25;
+                } else {
+                    // 🛑 감속 (Friction/Damping)
+                    this.velocity.x *= this.friction;
+                    this.velocity.z *= this.friction;
+                    
+                    // 아주 느린 속도는 0으로
+                    if (Math.abs(this.velocity.x) < 0.001) this.velocity.x = 0;
+                    if (Math.abs(this.velocity.z) < 0.001) this.velocity.z = 0;
+                    
+                    this.playerBounce = 0;
+                }
+
+                // 위치 업데이트
+                this.player.position.x += this.velocity.x;
+                this.player.position.z += this.velocity.z;
+
+                // 경계 제한
+                const limit = this.villageSize / 2 - 5;
+                this.player.position.x = Math.max(-limit, Math.min(limit, this.player.position.x));
+                this.player.position.z = Math.max(-limit, Math.min(limit, this.player.position.z));
+
+                // 🌊 점프 및 중력 (부드러운 포물선)
+                if (!this.isGrounded) {
+                    this.jumpVelocity -= this.gravity;
+                    this.player.position.y += this.jumpVelocity;
+                    
+                    // 착지
+                    if (this.player.position.y <= 1) {
+                        this.player.position.y = 1;
+                        this.isGrounded = true;
+                        this.jumpVelocity = 0;
+                    }
+                } else {
+                    // 지상에서 걷기 바운스
+                    const bounceOffset = Math.sin(this.playerBounce) * 0.08;
+                    if (this.playerBounce > 0) {
+                        this.player.position.y = 1 + bounceOffset;
+                    } else {
+                        this.player.position.y = 1;
+                    }
+                }
+            }
+
+            updateCamera() {
+                // 🎥 TPS 숄더뷰 카메라 (부드러운 추적)
+                
+                const playerPos = this.player.position.clone();
+                
+                // 카메라 목표 위치 계산 (캐릭터 등 뒤)
+                const horizontalAngle = this.cameraAngle.horizontal;
+                const verticalAngle = this.cameraAngle.vertical;
+                const distance = this.cameraDistance;
+                
+                // 구면 좌표계로 카메라 위치 계산
+                const targetX = playerPos.x - Math.sin(horizontalAngle) * Math.cos(verticalAngle) * distance;
+                const targetY = playerPos.y + Math.sin(verticalAngle) * distance + 1.5; // 캐릭터 높이 오프셋
+                const targetZ = playerPos.z - Math.cos(horizontalAngle) * Math.cos(verticalAngle) * distance;
+                
+                const targetPosition = new THREE.Vector3(targetX, targetY, targetZ);
+                
+                // ✨ 부드러운 추적 (Lerp) - 약간의 지연
+                this.camera.position.lerp(targetPosition, 0.1);
+                
+                // 카메라가 바라볼 위치 (캐릭터 상체)
+                const lookAtTarget = playerPos.clone();
+                lookAtTarget.y += 1; // 머리 높이
+                
+                // ✨ 시선도 부드럽게 (Lerp)
+                this.cameraLookAt.lerp(lookAtTarget, 0.15);
+                this.camera.lookAt(this.cameraLookAt);
+            }
+
+            updateMinimap() {
+                const canvas = document.getElementById('minimapCanvas');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                const size = canvas.width;
+                const scale = size / this.villageSize;
+                
+                // 배경
+                const gradient = ctx.createLinearGradient(0, 0, size, size);
+                gradient.addColorStop(0, '#b5ead7');
+                gradient.addColorStop(1, '#c7ceea');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+                
+                // 중앙 광장
+                ctx.fillStyle = '#f5deb3';
+                const plazaSize = 45 * scale;
+                ctx.fillRect(size/2 - plazaSize/2, size/2 - plazaSize/2, plazaSize, plazaSize);
+                
+                // 길
+                ctx.fillStyle = '#d2b48c';
+                ctx.fillRect(0, size/2 - 2, size, 4);
+                ctx.fillRect(size/2 - 2, 0, 4, size);
+                
+                // 건물들
+                ctx.fillStyle = '#ff9aa2';
+                this.buildings.forEach(building => {
+                    const bx = (building.position.x / this.villageSize + 0.5) * size;
+                    const bz = (building.position.z / this.villageSize + 0.5) * size;
+                    ctx.beginPath();
+                    ctx.arc(bx, bz, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // 👾 슬라임 몬스터
+                ctx.fillStyle = '#00ff00';
+                this.monsters.forEach(monster => {
+                    const mx = (monster.position.x / this.villageSize + 0.5) * size;
+                    const mz = (monster.position.z / this.villageSize + 0.5) * size;
+                    ctx.beginPath();
+                    ctx.arc(mx, mz, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#00aa00';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+                
+                // 플레이어
+                const playerX = (this.player.position.x / this.villageSize + 0.5) * size;
+                const playerZ = (this.player.position.z / this.villageSize + 0.5) * size;
+                
+                const colors = {
+                    ryan: '#ffb84d',
+                    muzi: '#ffeb3b',
+                    apeach: '#ffb3d9'
+                };
+                
+                ctx.fillStyle = colors[this.currentCharacter];
+                ctx.beginPath();
+                ctx.arc(playerX, playerZ, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+
+                this.time += 0.01;
+                this.updatePlayer();
+                this.updateCamera();
+                this.updateMinimap();
+                this.animateCharacter(); // 캐릭터 애니메이션
+                this.updateBullets(); // 🔫 총알 업데이트
+                this.checkCollisions(); // 💥 충돌 감지
+
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        const game = new CozyVillageGame();
+        window.game = game; // 전역 접근 (모델 삭제용)
+        
+        console.log('🏗️ Revit 빌리지 얼티밋 - BIM 메타버스에 오신 것을 환영합니다!');
+    </script>
+</body>
+</html>
